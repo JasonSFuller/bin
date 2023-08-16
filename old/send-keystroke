@@ -1,0 +1,208 @@
+#!/bin/bash
+
+DEBUG=0
+
+# Take string input from the command-line and send the corresponding keystrokes
+# to my QEMU VM, similar to how you can in Remmina RDP sessions.  This helps
+# with cases like the Windows lockscreen, UAC prompts, the VMWare web console,
+# etc. where I can't paste from the Windows clipboard.  I've seen this written
+# in other languages (like Ruby and what not), but dependencies suck and `bash` 
+# is king, IMHO.  I don't intend to be "elegant" here, just "git 'er done."
+# So... YMMV.
+#
+# Also, I'm only implementing (and assume you also have set) a IBM PC 104-key
+# keyboard (Windows, ANSI US layout).  However, there are more "keys" and
+# layouts:
+#     man virkeyname-linux
+#     # or https://libvirt.org/manpages/virkeyname-linux.html
+#     # from Wikipedia:  "Common additions to the standard layouts include
+#     #   additional power management keys, volume controls, media player
+#     #   controls, and miscellaneous user-configurable shortcuts for email
+#     #   client, World Wide Web browser, etc.
+#
+# ...but this is what I need, and I'm not bothering beyond this.  If you need
+# "special" keys like <CTRL>+<ALT>+<DEL> or <ESC>, then use `virsh send-key`
+# directly, e.g.:
+#     sudo virsh send-key "$DOM" KEY_LEFTCTRL KEY_LEFTALT KEY_DELETE
+#     sudo virsh send-key "$DOM" KEY_ESC
+#
+# Just note that if you want simultaneous keypresses, you have to send them all
+# in the same command.  If you want sequential keypresses (like normal typing), 
+# they **must** be executed as separate `virsh send-key` commands.
+#
+# TODO - I should investigate this further, but I **did** install the
+# virtio-win-guest-tools on my test VM (Win 10).  I don't know _for sure_ if 
+# this is required (it may not be), but if you have trouble with keys not 
+# registering inside the VM, you should start by installing the tools.
+#
+# TODO - I also had trouble with some applications (Notepad++, VS Code) "eating"
+# random enter (and tab?) keys during testing (it was not at all consistent, 
+# even back-to-back executions), but Microsoft's Notepad, UAC prompts, VMWare's
+# HTML5 web console, etc. never once displayed this behavior... so, meh?  Maybe 
+# the apps are doing some funky caching or keyboard caprocessing I don't know 
+# about.
+#
+# To get a list of all keys:
+#     man virkeyname-linux | grep -oP '\bKEY_.*\b' | column
+#
+# Below, only "printable" characters that make sense are interpreted, mainly
+# 32 (' ' = space) to 126 ('~' = tilde) from `man ascii`:
+#
+#     30 40 50 60 70 80 90 100 110 120
+#    ---------------------------------
+#   0:    (  2  <  F  P  Z  d   n   x
+#   1:    )  3  =  G  Q  [  e   o   y
+#   2:    *  4  >  H  R  \  f   p   z
+#   3: !  +  5  ?  I  S  ]  g   q   {
+#   4: "  ,  6  @  J  T  ^  h   r   |
+#   5: #  -  7  A  K  U  _  i   s   }
+#   6: $  .  8  B  L  V  `  j   t   ~
+#   7: %  /  9  C  M  W  a  k   u  DEL
+#   8: &  0  :  D  N  X  b  l   v
+#   9: '  1  ;  E  O  Y  c  m   w
+
+function ascii2key
+{
+  local c
+  printf -v c "%d" "'$1"
+  case "$c" in
+      9) echo "KEY_TAB" ;; # \t (tab)
+     10) echo "KEY_ENTER";; # \n (newline)
+     32) echo "KEY_SPACE";; # ' ' (space)
+     33) echo "KEY_LEFTSHIFT KEY_1";; # !
+     34) echo "KEY_LEFTSHIFT KEY_APOSTROPHE";; # "
+     35) echo "KEY_LEFTSHIFT KEY_3";; # #
+     36) echo "KEY_LEFTSHIFT KEY_4";; # $
+     37) echo "KEY_LEFTSHIFT KEY_5";; # %
+     38) echo "KEY_LEFTSHIFT KEY_7";; # &
+     39) echo "KEY_APOSTROPHE";; # '
+     40) echo "KEY_LEFTSHIFT KEY_9";; # (
+     41) echo "KEY_LEFTSHIFT KEY_0";; # )
+     42) echo "KEY_LEFTSHIFT KEY_8";; # *
+     43) echo "KEY_LEFTSHIFT KEY_EQUAL";; # +
+     44) echo "KEY_COMMA";; # ,
+     45) echo "KEY_MINUS";; # -
+     46) echo "KEY_DOT";; # .
+     47) echo "KEY_SLASH";; # /
+     48) echo "KEY_0";; # 0
+     49) echo "KEY_1";; # 1
+     50) echo "KEY_2";; # 2
+     51) echo "KEY_3";; # 3
+     52) echo "KEY_4";; # 4
+     53) echo "KEY_5";; # 5
+     54) echo "KEY_6";; # 6
+     55) echo "KEY_7";; # 7
+     56) echo "KEY_8";; # 8
+     57) echo "KEY_9";; # 9
+     58) echo "KEY_LEFTSHIFT KEY_SEMICOLON";; # :
+     59) echo "KEY_SEMICOLON";; # ;
+     60) echo "KEY_LEFTSHIFT KEY_COMMA";; # <
+     61) echo "KEY_EQUAL";; # =
+     62) echo "KEY_LEFTSHIFT KEY_DOT";; # >
+     63) echo "KEY_LEFTSHIFT KEY_SLASH";; # ?
+     64) echo "KEY_LEFTSHIFT KEY_2";; # @
+     65) echo "KEY_LEFTSHIFT KEY_A";; # A
+     66) echo "KEY_LEFTSHIFT KEY_B";; # B
+     67) echo "KEY_LEFTSHIFT KEY_C";; # C
+     68) echo "KEY_LEFTSHIFT KEY_D";; # D
+     69) echo "KEY_LEFTSHIFT KEY_E";; # E
+     70) echo "KEY_LEFTSHIFT KEY_F";; # F
+     71) echo "KEY_LEFTSHIFT KEY_G";; # G
+     72) echo "KEY_LEFTSHIFT KEY_H";; # H
+     73) echo "KEY_LEFTSHIFT KEY_I";; # I
+     74) echo "KEY_LEFTSHIFT KEY_J";; # J
+     75) echo "KEY_LEFTSHIFT KEY_K";; # K
+     76) echo "KEY_LEFTSHIFT KEY_L";; # L
+     77) echo "KEY_LEFTSHIFT KEY_M";; # M
+     78) echo "KEY_LEFTSHIFT KEY_N";; # N
+     79) echo "KEY_LEFTSHIFT KEY_O";; # O
+     80) echo "KEY_LEFTSHIFT KEY_P";; # P
+     81) echo "KEY_LEFTSHIFT KEY_Q";; # Q
+     82) echo "KEY_LEFTSHIFT KEY_R";; # R
+     83) echo "KEY_LEFTSHIFT KEY_S";; # S
+     84) echo "KEY_LEFTSHIFT KEY_T";; # T
+     85) echo "KEY_LEFTSHIFT KEY_U";; # U
+     86) echo "KEY_LEFTSHIFT KEY_V";; # V
+     87) echo "KEY_LEFTSHIFT KEY_W";; # W
+     88) echo "KEY_LEFTSHIFT KEY_X";; # X
+     89) echo "KEY_LEFTSHIFT KEY_Y";; # Y
+     90) echo "KEY_LEFTSHIFT KEY_Z";; # Z
+     91) echo "KEY_LEFTBRACE";; # [
+     92) echo "KEY_BACKSLASH";; # \
+     93) echo "KEY_RIGHTBRACE";; # ]
+     94) echo "KEY_LEFTSHIFT KEY_6";; # ^
+     95) echo "KEY_LEFTSHIFT KEY_MINUS";; # _
+     96) echo "KEY_GRAVE";; # `
+     97) echo "KEY_A";; # a
+     98) echo "KEY_B";; # b
+     99) echo "KEY_C";; # c
+    100) echo "KEY_D";; # d
+    101) echo "KEY_E";; # e
+    102) echo "KEY_F";; # f
+    103) echo "KEY_G";; # g
+    104) echo "KEY_H";; # h
+    105) echo "KEY_I";; # i
+    106) echo "KEY_J";; # j
+    107) echo "KEY_K";; # k
+    108) echo "KEY_L";; # l
+    109) echo "KEY_M";; # m
+    110) echo "KEY_N";; # n
+    111) echo "KEY_O";; # o
+    112) echo "KEY_P";; # p
+    113) echo "KEY_Q";; # q
+    114) echo "KEY_R";; # r
+    115) echo "KEY_S";; # s
+    116) echo "KEY_T";; # t
+    117) echo "KEY_U";; # u
+    118) echo "KEY_V";; # v
+    119) echo "KEY_W";; # w
+    120) echo "KEY_X";; # x
+    121) echo "KEY_Y";; # y
+    122) echo "KEY_Z";; # z
+    123) echo "KEY_LEFTSHIFT KEY_LEFTBRACE";; # {
+    124) echo "KEY_LEFTSHIFT KEY_BACKSLASH";; # |
+    125) echo "KEY_LEFTSHIFT KEY_RIGHTBRACE";; # }
+    126) echo "KEY_LEFTSHIFT KEY_GRAVE";; # ~
+  esac
+}
+
+################################################################################
+
+# DOM = virtlib accessible guest VM name
+DOM="$1"
+
+if [[ -z "$DOM" ]]; then
+  echo "ERROR: host vm name missing" >&2
+  exit 1
+fi
+
+if [[ -p /dev/stdin ]]; then
+  # STR=$(cat /dev/stdin) # DON'T use command expansion; it eats trailing newlines
+  IFS= read -r -d '' STR < /dev/stdin
+else
+  STR="$*"
+  printf -v STR "%b" "$STR" # convert \n, \t, etc to literal characters
+fi
+
+if ((DEBUG)); then
+  echo "Input:"
+  echo -n "$STR" | od -c | sed 's/^/  /'
+  echo "Sending keys:"
+  echo "  CHAR   HEX   DEC  KEY(S)"
+fi
+
+echo -n "$STR" | while IFS= read -r -N 1 c
+do
+  k=$(ascii2key "$c")
+  if [[ "$k" == '' ]]; then
+    echo "ERROR: unknown character found" >&2
+    exit 1
+  fi
+  if ((DEBUG)); then
+    #printf "  char=%-5q (hex=0x%02x, dec=%3d) --> keys=%s\n" "$c" "'$c" "'$c" "$k"
+    printf "  %-5q  0x%02x  %3d  %s\n" "$c" "'$c" "'$c" "$k"
+  fi
+  # shellcheck disable=SC2086
+  # I want word splitting here, actually.
+  sudo virsh send-key "$DOM" $k &>/dev/null
+done

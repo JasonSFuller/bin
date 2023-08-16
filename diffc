@@ -1,0 +1,11 @@
+#!/bin/bash
+
+# For distros (I'm looking at you RHEL/CentOS 7) with older versions of 
+# `diff` (without --color), you can use `git` for a good approximation.
+
+if ! builtin command -v git &>/dev/null; then
+  echo "ERROR: 'git' command not found." >&2
+  exit 1
+fi
+
+git -c color.ui=auto --no-pager diff --no-index "$1" "$2"

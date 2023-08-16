@@ -1,0 +1,66 @@
+#!/bin/bash
+
+# query LDAP (Active Directory) and get a user's POSIX attributes.
+#
+# REQUIRED: 
+#   kinit - authenticating to AD needs a valid kerberos ticket
+#   ldapquery config (.ldaprc) - so common command line parameters
+#
+# EXAMPLE ~/.ldaprc
+#   $ cat ~/.ldaprc
+#   uri           ldaps://dc01.example.com:636
+#   base          DC=EXAMPLE,DC=COM
+#   sasl_mech     GSSAPI
+#   sasl_realm    EXAMPLE.COM
+#   # Without this, you get an error:
+#   #   ldap_result: Can't contact LDAP server (-1)
+#   sasl_secprops maxssf=0
+
+ldapfields=(
+  sAMAccountName
+  msSFU30NisDomain
+  uidNumber
+  gidNumber
+  unixHomeDirectory
+  loginShell
+  userPrincipalName
+  displayName
+  dn
+  cn
+  uid
+  PrimaryGroupDN
+  memberUid
+  ipHostNumber
+  gecos
+  givenName
+  surname
+  title
+)
+
+posixfields=(
+  SamAccountName
+  msSFU30NisDomain
+  uidNumber
+  gidNumber
+  loginShell
+  unixHomeDirectory
+  PrimaryGroupDN
+  MemberUid
+  ipHostNumber
+)
+
+# covert posix fields to pipe delimited for grep expression
+posixfields=$(printf '%s|' "${posixfields[@]}" | sed -r 's/\|*$//')
+
+raw=$(ldapsearch -o ldif-wrap=no -LLL -Q sAMAccountName="$1" ${ldapfields[@]} 2>&1)
+
+case "$?" in
+  '0')
+    echo "$raw" \
+      | grep -vE '^\w*$|^# refldap' \
+      | sort \
+      | IFS='|' grep --color -iE "^($posixfields)\b.*|$"
+    ;;
+  '254') echo "ERROR: authentication failed; try 'kinit'" >&2; exit 1 ;;
+  *)     echo "ERROR: lookup failed for an unknown reason (exit status=$val)." >&2; exit 1 ;;
+esac

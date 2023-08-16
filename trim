@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# trim whitespace
+# source:  https://stackoverflow.com/a/3352015
+
+function trim
+{
+  local var="$*"
+  var="${var#"${var%%[![:space:]]*}"}"
+  var="${var%"${var##*[![:space:]]}"}"
+  printf '%s' "$var"
+}
+
+# if arguments are supplied
+if [[ -n "$*" ]]; then trim "$*"; exit; fi
+
+# otherwise read from stdin
+while read -r line; do trim "$line"; echo; done < /dev/stdin
+

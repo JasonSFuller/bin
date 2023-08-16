@@ -1,0 +1,93 @@
+#!/bin/bash
+
+# Purpose:  Intelligently extract an archive to its own folder.  Built for
+# easy integration into Thunar custom actions, but works from the command
+# line too.
+#
+# Thunar setup:
+#  * Edit (menu) > Configure custom actions... > Plus button (+) to add a 
+#    new action
+#  * Basic (tab)
+#    * Name:          Extract to new folder
+#    * Description:   Extract files in an archive into a new folder with the same base name.
+#    * Command:       extract-here %F
+#    * Icon:          org.gnome.ArchiveManager
+#  * Appearance Conditions (tab)
+#    * File Pattern:  *.tar.gz;*.tgz;*.zip
+#    * Appears if selection contains:
+#      * Other files
+
+
+
+################################################################################
+
+set -e
+
+# Given an archive file (plus extension), make a similarly named dir and `pushd`
+# into it.
+function mcd
+{
+  local file="$1"
+  local ext="$2"
+  local dir base dest
+  if [[ ! -f "$file" ]]; then
+    echo "ERROR: not a file or does not exist ($file)" >&2
+    return 1
+  fi
+  dir=$(dirname "$file")
+  base=$(basename -s "$ext" "$file")
+  dest="$dir/$base"
+  if [[ -d "$dest" ]]; then
+    echo "ERROR: dir already exists ($dest)" >&2 
+    return 1
+  fi
+  if ! mkdir "$dest"; then
+    echo "ERROR: cannot create dir ($dest)" >&2
+    return 1
+  fi
+  pushd "$dest" &>/dev/null
+}
+
+# It's annoying when you have a single nested dir with the same name as its
+# parent (./example/example).  Check for this and collapse it (./example).
+# Also, `popd` out of the archive dir.
+function clean
+{
+  local dir base single cnt
+  dir=$(realpath -e .)
+  base=$(basename "$dir")
+  single=$(find . -maxdepth 1 -type d \! -name . -printf '%f\n')
+  cnt=$(wc -l <<< "$single")
+  if [[ "$cnt" == "1" && "$base" == "$single" ]]; then
+    find "./$single" \
+      -maxdepth 1 \
+      \! -name '..' \! -name '.' \! -name "$single" \
+      -print0 \
+      | xargs -0 mv -t .
+    rmdir "$single"
+  fi
+  popd >&/dev/null # from pushd in mcd
+}
+
+
+
+################################################################################
+
+# Loop over all the files passed in, and use the appropriate tool to extract
+# its contents.
+for i in "$@"
+do
+  i=$(realpath -e "$i")
+  case "$i" in
+    *.tar.gz ) mcd "$i" ".tar.gz" && tar -xf "$i"  && clean ;;
+    *.tgz )    mcd "$i" ".tgz"    && tar -xf "$i"  && clean ;;
+    *.zip )    mcd "$i" ".zip"    && unzip -q "$i" && clean ;;
+    *.xpi )    mcd "$i" ".xpi"    && unzip -q "$i" && clean ;;
+    *.rpm )    mcd "$i" ".rpm"    && rpm2cpio "$i" | cpio -dim --quiet && clean ;;
+    *)
+      echo "ERROR: unknown archive type ($i)" >&2 
+      continue
+      ;;
+  esac
+done
+

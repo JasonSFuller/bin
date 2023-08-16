@@ -1,0 +1,30 @@
+#!/bin/bash
+
+#if [[ -z "$BW_SESSION" ]]; then
+#  echo "ERROR: bitwarden session var missing" >&2
+#  echo "  Try 'bw login' and 'bw unlock' and export the BW_SESSION var."
+#  exit 1
+#fi
+#
+## Get the password from BitWarden CLI
+#uuid=$(11112222-3333-4444-5555-666677778888)
+#pw=$(bw get password "$uuid")
+#ret=$?
+
+# Get the password using Gnome Passwords and Keys (seahorse, libsecret, etc)
+label='jfuller-work-vm'
+pw=$(secret-tool lookup user "$label")
+ret=$?
+
+if [[ "$ret" != "0" ]]; then
+  echo "ERROR: password lookup failed (exit=$ret)" >&2
+  exit 1
+fi
+
+if [[ -z "$pw" ]]; then
+  echo "ERROR: password is empty" >&2
+  exit 1
+fi
+
+# NOTE: work-vm should be the name of h
+send-keystroke "work-vm" "$pw\n"

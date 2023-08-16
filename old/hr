@@ -1,0 +1,42 @@
+#!/bin/bash
+
+# horizontal rule (like in HTML) = draws a line the width of your terminal
+#
+# usage:
+#
+#   hr <text> <char> <width>
+#
+#   text  = header text you want to appear, after printing <char> twice
+#   char  = set of characters repeated until width is reached
+#   width = length of the horizontal line, defaults to terminal width
+#
+# examples (terminal sized to 70 chars wide):
+#
+#   $ hr
+#   ----------------------------------------------------------------------
+#
+#   $ hr '<[ Jason ]>'
+#   --<[ Jason ]>---------------------------------------------------------
+#
+#   $ hr '=[  test  ]=' - 75
+#   --=[  test  ]=-------------------------------------------------------------
+#
+#   $ hr ' output ' \# 60
+#   ## output ##################################################
+#
+#   $ hr '_[ asdfasdf ]' '_.~"~.' 60
+#   _.~"~._.~"~._[ asdfasdf ]_.~"~._.~"~._.~"~._.~"~._.~"~._.~"~
+
+
+t=$1 # text
+c=$2 # char(s) to be repeated
+w=$3 # width
+
+if [[ -z "$c" ]]; then c='-'; fi                  # default to a dash
+if [[ -z "$w" ]]; then w=$(tput cols); fi         # default to terminal width
+if [[ ! "$w" =~ ^[[:digit:]]+$ ]]; then w=80; fi  # fallback to 80, if invalid
+
+l=$(( w - 2 * ${#c} - ${#t} ))                    # remaining line length
+while [[ ${#r} -lt $l ]]; do r+="$c"; done        # build up remaining line
+
+printf "%s%s%s\n" "$c$c" "$t" "${r:0:$l}" 

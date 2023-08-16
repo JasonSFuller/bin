@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# because gedit theme in rhel 8.0 was being stupid
+env GTK_THEME=Adwaita:dark gedit "$@"
+

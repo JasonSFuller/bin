@@ -1,0 +1,19 @@
+#!/bin/bash
+# PURPOSE:  Read lines of data from stdin, and hash them (for
+# comparison).
+
+# WARNING:  Bash can't store null chars in **any** variables.
+# If your input contains nulls, you're gonna have a bad time.
+# Also, this script is not perfect.  It was a quick and dirty
+# way of checking lines on systems where I couldn't just byte
+# for byte copy the files for... whatever reason.
+
+while IFS= read -r line
+do
+  md5=$(echo -n "$line" | md5sum | awk '{print $1}')
+  printf "%s %q\n" "$md5" "$line"
+done < /dev/stdin
+if [[ -n "$line" ]]; then
+  md5=$(echo -n "$line" | md5sum | awk '{print $1}')
+  printf "%s %q\n" "$md5" "$line"
+fi

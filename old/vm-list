@@ -1,0 +1,3 @@
+#!/bin/bash
+
+/Applications/VMware\ Fusion.app/Contents/Library/vmrun list

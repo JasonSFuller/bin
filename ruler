@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# A very simple "ruler" for "measuring" line lengths or the number of characters 
+# on a terminal.  I found myself manually building plaintext versions of these 
+# in shell scripts all the time.  If $1 is a number, it will use that as the 
+# line length.  If none specified, the terminal width will be used.
+#
+# Example output:
+#
+# --------10--------20--------30--------40--------50--------60--------70--------
+# 123456789-123456789-123456789-123456789-123456789-123456789-123456789-12345678
+
+w=$1
+if [[ -z "$w" ]]; then w=$(tput cols); fi          # get your terminal's width
+if [[ ! "$w" =~ ^[[:digit:]]+$ ]]; then w=80; fi   # Just In Case (tm)
+
+for (( i=1; i<=$w/10; i++ )); do                   # build line for tens place
+  printf "%10s" "$((i*10))" | tr ' ' -
+done
+printf "%*.*s" "$((w%10))" "$((w%10))" '---------' # tens place remainder
+echo
+
+for (( i=1; i<=$w; i++ )); do                      # build line for ones place
+  ((i%10)) && echo -n $((i%10)) || echo -n -
+done
+echo
+

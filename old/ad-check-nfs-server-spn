@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# ----- sample output for ldapsearch -----
+# $ ldapsearch -LLL -Q cn=nfs01 servicePrincipalName
+# dn: CN=NFS01,OU=Linux Server,OU=Servers,OU=Cleveland,DC=example,DC=com
+# servicePrincipalName: nfs/nfs01.example.com
+# servicePrincipalName: cifs/NFS01
+# servicePrincipalName: cifs/nfs01.example.com
+# servicePrincipalName: nfs/NFS01
+# servicePrincipalName: RestrictedKrbHost/nfs01.example.com
+# servicePrincipalName: RestrictedKrbHost/NFS01
+# servicePrincipalName: host/nfs01.example.com
+# servicePrincipalName: host/NFS01
+# 
+# # refldaps://DomainDnsZones.example.com/DC=DomainDnsZones,DC=example,DC=com
+# #
+
+sn='SERVER01'                               # short name (UPPER case important)
+ln='server01.example.com'                   # long name (FQDN, usually lower case)
+re="servicePrincipalName: nfs/($sn|$ln)|\$" # regex for NFS SPNs match (green)
+
+ldapsearch -o ldif-wrap=no -LLL -Q "CN=$sn" servicePrincipalName \
+  | grep -vP '^# refldap|^$' \
+  | GREP_COLOR=32 grep --color=always -P "$re"

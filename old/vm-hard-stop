@@ -1,0 +1,11 @@
+#!/bin/bash
+
+vm="$1"
+file="$HOME/Virtual Machines.localized/${vm}.vmwarevm/${vm}.vmx"
+
+if [[ ! -f "$file" ]]; then
+  print "ERROR: vm image not found ($file)" >&2
+  exit 1
+fi
+
+/Applications/VMware\ Fusion.app/Contents/Library/vmrun -T fusion stop "$file" hard

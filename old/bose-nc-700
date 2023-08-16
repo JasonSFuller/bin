@@ -1,0 +1,87 @@
+#!/bin/bash
+
+# I have a pair of Bose NC 700 headphones, and while they are **amazing** and I
+# love them, there are a few minor drawbacks.  One that is particularly annoying
+# is the inability to be in both a high quality playback mode (a2dp) and also be
+# in the headset mode, which enables the mic (for WebEx/Zoom/Teams meetings).
+#
+# The headset mode has reduced sound quality for output (fine for calls, not so
+# much for music), but it has **noise canceling** input, which is **fantastic**
+# for calls.  The a2dp mode has great sound quality but no input.  And they are
+# mutually exclusive, as far as I can tell.  Windows seems to swap back and
+# forth a bit better than Linux, but I haven't tested extensively... because,
+# WINDOWS.  Blech!
+#
+# This script is so I can swap between the modes from the command line, which I 
+# have open all the time anyway.  I _might_ make a Gnome status bar "toggle,"
+# but this works for now.  In Ubuntu 18.04 LTS (where I'm testing), you can also
+# do this by clicking a bajillion times:
+#
+#   Gnome Settings (app) > Sound (side bar) > Output (tab)
+#   Select "Headphone - LE-Bose NC 700" and change the Profile (drop-down)
+#     - High Fidelity Playback (A2DP Sink)
+#     - Headset Head Unit (HSP/HFP)
+#
+# `pacmd list-cards` to find cards and list profiles
+# `pacmd list-sinks` to find audio output devices
+# `pacmd list-sources` to find audio input devices
+
+function usage
+{
+  local base
+  base=$(basename "$0")
+  echo "USAGE:  $base <a2dp|headset|off>"
+  echo "  a2dp    => use a2dp mode (great sound quality, no input)"
+  echo "  headset => use headset mode (ok sound quality, noise canceling input)"
+  echo "  off     => use built-in laptop microphone/speakers (both terrible)"
+  exit 1
+}
+
+card="bluez_card.4C_87_5D_26_E8_7E"
+
+if ! pacmd list-cards |& grep -qF "$card"; then
+  echo "ERROR: headphones not detected" >&2
+  exit 1
+fi
+
+case "$1" in
+  a2dp|a2d|a2|a)
+    profile='a2dp_sink'
+    def_src='alsa_input.pci-0000_00_1f.3.analog-stereo'
+    def_dst='bluez_sink.4C_87_5D_26_E8_7E.a2dp_sink'
+    ;;
+  headset|headse|heads|head|hea|he|h)
+    profile='headset_head_unit'
+    def_src='bluez_source.4C_87_5D_26_E8_7E.headset_head_unit'
+    def_dst='bluez_sink.4C_87_5D_26_E8_7E.headset_head_unit'
+    ;;
+  off|of|o)
+    profile='off'
+    def_src='alsa_input.pci-0000_00_1f.3.analog-stereo'
+    def_dst='alsa_output.pci-0000_00_1f.3.analog-stereo'
+    ;;
+  *) usage ;;
+esac
+
+pacmd set-card-profile "$card" "$profile"
+pacmd set-default-source "$def_src"
+pacmd set-default-sink "$def_dst"
+
+# migrate all running apps to new sink/source
+
+pacmd list-sink-inputs \
+| grep -P '^\s+index:\s*[0-9]+\s*$' \
+| awk '{print $2}' \
+| while read -r app
+do
+  pacmd move-sink-input "$app" "$def_dst"
+done
+
+pacmd list-source-outputs \
+| grep -P '^\s+index:\s*[0-9]+\s*$' \
+| awk '{print $2}' \
+| while read -r app
+do
+  pacmd move-source-output "$app" "$def_src"
+done
+

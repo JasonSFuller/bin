@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# Use Python to serve the current directory as root for a HTTP server.
+# Sure it's dumb, but I almost always forget the command.
+
+if builtin command -v python3 &>/dev/null; then
+  python3 -m http.server 8000
+  exit
+fi
+
+if builtin command -v python &>/dev/null; then
+  python -m SimpleHTTPServer 8000
+  exit
+fi
+
+echo "ERROR: could not find python" >&2
+exit 1

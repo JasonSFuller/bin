@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# Generate a bunch of random passwords.
+
+function error { echo "ERROR: $*" >&2; exit 1; }
+
+echo -n '-- 32 alphanum + special -------  '
+echo -n '-- 32 alphanum -----------------  '
+echo    '-- 16 ----------'
+
+for ((i=1; i<=20; i++))
+do
+  LC_CTYPE=C tr -dc '^!-~' < /dev/urandom | tr -d "\\\\'\"\`" | head -c 32
+  echo -n '  '
+  LC_CTYPE=C tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 32
+  echo -n '  '
+  LC_CTYPE=C tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 16
+  echo
+done

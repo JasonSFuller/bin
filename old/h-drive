@@ -1,0 +1,57 @@
+#!/bin/bash
+
+# remote domain username credentials (mount will prompt for password)
+#domain=silly-company
+#username=jfuller
+CREDS="$HOME/.ad-creds"
+source "$CREDS"
+PASSWD="$password"
+
+# local user numeric UID/GID (jfuller=1000)
+uid=1000
+gid=1000
+
+# force local file and directory permissions to pre-set values since windows to
+# linux permissions don't translate well
+dir_mode=0755
+file_mode=0644
+
+# remote cifs server and the unc path, plus a local directory for mounting
+host="silly-company.com"
+# unc="//silly-company.com/some_ou/users/cleveland/$USER" # old share path
+unc="//$host/Users/Cleveland/jfuller"
+dir="/home/jfuller/h-drive"
+
+################################################################################
+
+install -m "$dir_mode" -o "$uid" -g "$gid" -d "$dir"
+
+if ! ping -c 3 "$host" >&/dev/null; then
+  echo "WARN: cannot ping '$host'" >&2
+  exit 1
+fi
+
+if mountpoint "$dir" >&/dev/null; then
+  echo "ERROR: '$dir' is already mounted" >&2
+  exit 1
+fi
+
+cmd=$(klist)
+ret=$?
+
+
+echo "Enter your ${username}@${domain} password:"
+sudo mount -t cifs -o "domain=$domain,user=$username,dir_mode=$dir_mode,file_mode=$file_mode,uid=$uid,gid=$gid" "$unc" "$dir"
+#sudo mount -t cifs -o "cred=$CREDS,dir_mode=$dir_mode,file_mode=$file_mode,uid=$uid,gid=$gid" "$unc" "$dir"
+
+
+# NOTE: not sure why this fails, but suspect it's because my laptop isn't 
+# joined to the domain
+#cmd=$(klist)
+#ret=$?
+#if [[ "$ret" -ne 0 || ! "$cmd" =~ krbtgt ]]; then
+#  echo "ERROR: missing kerberos TGT, try kinit" >&2
+#  exit 1
+#fi
+#echo sudo mount -t cifs -o "sec=krb5,user=$username,cruid=jfuller,uid=1000,gid=1000" "$unc" "$dir"
+#     sudo mount -t cifs -o "sec=krb5,user=$username,cruid=jfuller,uid=1000,gid=1000" "$unc" "$dir"
