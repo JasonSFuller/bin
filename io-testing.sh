@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TEST_DIR=/mnt/nfs/acl_lab_v_01/fiotest
+TEST_DIR="${1:-/nfs/example/fiotest}"
 
 ################################################################################
 
@@ -14,6 +14,15 @@ fi
 if ! builtin command -v fio &>/dev/null; then
   apt update
   apt install -y fio
+fi
+
+if [[ ! -d "$TEST_DIR" ]]; then
+	echo "ERROR: test dir not found ($TEST_DIR)" >&2
+	exit 1
+fi
+if [[ ! -w "$TEST_DIR" ]]; then
+	echo "ERROR: test dir not writable ($TEST_DIR)" >&2
+	exit 1
 fi
 
 cat <<- 'EOF'
