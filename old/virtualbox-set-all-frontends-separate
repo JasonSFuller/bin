@@ -1,0 +1,56 @@
+#!/bin/bash
+
+# Changes all **existing** (and powered off) VirtualBox guests to use the 
+# "separate" frontend as the default, so the guest has the ability/option
+# to "continue running in the background" when you close the window.
+#
+# Tested with VirtualBox 6.1.  No idea when they introduced this feature.
+#
+# Notes:
+#   https://www.virtualbox.org/manual/ch08.html#vboxmanage-cmd-overview
+#     VBoxManage list       [--long|-l] [--sorted|-s] vms|runningvms|...
+#     VBoxManage showvminfo <uuid|vmname> [--details] [--machinereadable]
+#     VBoxManage modifyvm   [--defaultfrontend default|<name>]
+#   https://www.virtualbox.org/manual/ch08.html#vboxmanage-modifyvm-general
+#     --defaultfrontend default|gui|headless|separate: Specifies the default
+#     frontend to be used when starting this VM.
+#   https://www.virtualbox.org/manual/ch08.html#vboxmanage-startvm
+#     * gui      = Starts a VM showing a GUI window. This is the default.
+#     * headless = Starts a VM without a window for remote display only.
+#     * separate = Starts a VM with a detachable UI. Technically, it is a
+#                  headless VM with user interface in a separate process. 
+#                  This is an experimental feature as it lacks certain 
+#                  functionality, such as 3D acceleration.
+
+if ! builtin command -v VBoxManage &>/dev/null; then
+  echo "ERROR: 'VBoxManage' command not found." >&2
+  exit 1
+fi
+
+VBoxManage list vms \
+| grep -oiE '\{[a-f0-9-]{36}\}' \
+| while read vm
+do
+
+  echo '-----------------------------------------------------------------------'
+  vm_info=$(VBoxManage showvminfo "$vm")
+  echo 'Before:'
+  grep -E '^\s*(UUID|Name|Default Frontend|State):' <<< "$vm_info" \
+  | sed 's/^/  /'
+
+  if ! grep -qE '^State:\s*powered off\b' <<< "$vm_info"; then
+    echo "Skipped: VM state != 'powered off' (running VMs can't be changed)"
+    continue
+  fi
+
+  if grep -qE '^Default Frontend:\s*separate\b' <<< "$vm_info"; then
+    echo "Skipped: default frontend already set to 'separate'"
+    continue
+  fi
+
+  VBoxManage modifyvm "$vm" --defaultfrontend separate
+  echo -ne 'After:\n  '
+  VBoxManage showvminfo "$vm" | grep -E '^Default Frontend:'
+
+done
+
