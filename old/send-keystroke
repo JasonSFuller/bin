@@ -39,7 +39,7 @@ DEBUG=0
 # random enter (and tab?) keys during testing (it was not at all consistent, 
 # even back-to-back executions), but Microsoft's Notepad, UAC prompts, VMWare's
 # HTML5 web console, etc. never once displayed this behavior... so, meh?  Maybe 
-# the apps are doing some funky caching or keyboard caprocessing I don't know 
+# the apps are doing some funky caching or keyboard processing I don't know 
 # about.
 #
 # To get a list of all keys:
