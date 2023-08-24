@@ -8,10 +8,9 @@
 
 # If no arguments have been supplied, show usage info.
 if [[ -z "$*" ]]; then
-  # IMPORTANT: Here documents (the lines between the `cat` EOF blocks)
-  #            *REQUIRE* the start of the line be literal tab characters.
-  #            If changing this file, make *SURE* your editor doesn't
-  #            convert them to spaces.
+  # IMPORTANT: Here documents (the lines between the `cat` EOF blocks) *REQUIRE*
+  #   the start of the line be _literal_ tab characters.  If changing this file,
+  #   make *SURE* your editor doesn't convert them to spaces.
   cat <<- EOF
 		DESCRIPTION:
 		  Generate a private key, a CSR template (first time only; reused afterwards).
@@ -50,7 +49,7 @@ now=$(date +%Y%m%d%H%M%S)
 # Create the private key, if you don't already have one
 if [[ ! -f "$key" ]]; then
   openssl genrsa -out "$key" 4096
-  chmod 600 "$key"
+  chmod 0600 "$key"
 fi
 
 # Verify it's a valid private key.
@@ -67,10 +66,9 @@ if [[ ! -f "$cfg" ]]; then
   if [[ -n "$user" ]]; then ou=$(printf "%.64s" "${user}@${host}"); fi
 
   # Create the base CSR template (config).
-  # IMPORTANT: Here documents (the lines between the `cat` EOF blocks)
-  #            *REQUIRE* the start of the line be literal tab characters.
-  #            If changing this file, make *SURE* your editor doesn't
-  #            convert them to spaces.
+  # IMPORTANT: Here documents (the lines between the `cat` EOF blocks) *REQUIRE*
+  #   the start of the line be _literal_ tab characters.  If changing this file,
+  #   make *SURE* your editor doesn't convert them to spaces.
   cat <<- EOF > "$cfg"
 		[ req ]
 		default_bits       = 4096
