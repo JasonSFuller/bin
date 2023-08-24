@@ -14,13 +14,13 @@ w=$1
 if [[ -z "$w" ]]; then w=$(tput cols); fi          # get your terminal's width
 if [[ ! "$w" =~ ^[[:digit:]]+$ ]]; then w=80; fi   # Just In Case (tm)
 
-for (( i=1; i<=$w/10; i++ )); do                   # build line for tens place
+for (( i=1; i<=w/10; i++ )); do                    # build line for tens place
   printf "%10s" "$((i*10))" | tr ' ' -
 done
 printf "%*.*s" "$((w%10))" "$((w%10))" '---------' # tens place remainder
 echo
 
-for (( i=1; i<=$w; i++ )); do                      # build line for ones place
+for (( i=1; i<=w; i++ )); do                       # build line for ones place
   ((i%10)) && echo -n $((i%10)) || echo -n -
 done
 echo
