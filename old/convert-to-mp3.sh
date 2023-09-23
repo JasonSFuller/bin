@@ -12,9 +12,9 @@ function a {
   #printf "src  = %s\ndest = %s" "$src" "$dest"
 
   if [[ -f "$dest" ]]; then
-		echo "INFO: dest exists, skipping: $dest"
-		return 1
- 	fi
+    echo "INFO: dest exists, skipping: $dest"
+    return 1
+  fi
   if [[ ! -d "$dest_dir" ]]; then mkdir -p "$dest_dir"; fi
 
   ffmpeg -i "$src" \
