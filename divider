@@ -1,0 +1,38 @@
+#!/bin/bash
+
+function divider {
+  local header="$1" chars="${2:--}" width
+  width=$(tput cols 2>/dev/null)
+  if [[ ! "$width" =~ ^[0-9]+$ ]]; then width=80; fi # just in case
+	if [[ "${#header}" -ge "$width" ]]; then printf '%s\n' "$header"; return; fi
+  until [[ "${#chars}" -ge "$width" ]]; do chars+="$chars"; done
+  printf '%s%s\n' "$header" "${chars:0:$(( width - ${#header} ))}"
+}
+
+##### usage and testing ########################################################
+
+# NOTE: for testing, adjust your terminal width to 80 (normally the default)
+
+# testing boundaries
+divider 1234567890123456789012345678901234567890123456789012345678901234567890123456789
+divider 12345678901234567890123456789012345678901234567890123456789012345678901234567890
+divider 123456789012345678901234567890123456789012345678901234567890123456789012345678901
+
+# more examples
+divider '-----[ file: /this/is/a/test.cfg ]-----' # force minimum header
+divider 'Once more with feeling!'
+divider \
+	"_.-'\"\"'-._[ Weeeeee! ]_.-'\"\"'-._" \
+  "_.-'\"\"'-._"
+
+# fancy multiline examples
+divider '' '  .-.-. '
+divider '' ' / / \ \'
+divider '' "'-'   '-"
+
+divider '' "     .-."
+divider '' "'._.'   "
+
+# plain divider
+divider
+
