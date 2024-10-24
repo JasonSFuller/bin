@@ -1,13 +1,13 @@
 #!/bin/bash
 
-URL='https://github.com/sharkdp/bat/releases/download/v0.23.0/bat-v0.23.0-x86_64-unknown-linux-musl.tar.gz'
+URL='https://github.com/sharkdp/bat/releases/download/v0.24.0/bat-v0.24.0-x86_64-unknown-linux-musl.tar.gz'
 
 ################################################################################
 
 function error { echo "ERROR: $*" >&2; exit 1; }
 
 function cleanup {
-	cd || error "could not open home dir ($HOME)"
+  cd || error "could not open home dir ($HOME)"
   rm -rf "$dir"
 }
 
