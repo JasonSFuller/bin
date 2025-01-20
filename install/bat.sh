@@ -1,6 +1,6 @@
 #!/bin/bash
 
-URL='https://github.com/sharkdp/bat/releases/download/v0.24.0/bat-v0.24.0-x86_64-unknown-linux-musl.tar.gz'
+URL='https://github.com/sharkdp/bat/releases/download/v0.25.0/bat-v0.25.0-x86_64-unknown-linux-musl.tar.gz'
 
 ################################################################################
 
@@ -28,4 +28,3 @@ install -m 0755 bat-*-x86_64-unknown-linux-musl/bat ~/bin/bat
 
 echo "Don't forget to set an alias for 'cat' in your ~/.bashrc:"
 echo "  alias cat='bat --decorations never --paging never'"
-
