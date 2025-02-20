@@ -1,0 +1,181 @@
+#!/bin/bash
+
+####################################################################
+##                                                                ##
+##   IMPORTANT:  NOT FINANCIAL ADVICE!  CONSULT A PROFESSIONAL!   ##
+##                                                                ##
+####################################################################
+
+# Purpose: "Back of the napkin" retirement math.  Given your:
+#
+#   1. birthday,
+#   2. annual income needs, and
+#   3. current portfolio size
+#
+# How much money would you need to save if retiring at 59.5 y/o, when you can
+# start pulling money from tax deferred accounts?
+
+### Defaults
+birthday=$(date -d 'now - 40 years' '+%b %_d, %4Y')
+income_needed_per_yr=120000
+portfolio_today=1600000
+inflation_rate=0.03
+withdrawal_rate=0.04
+projected_growth_rate=0.07
+
+### Config file
+if [[ -r ~/.retire ]]; then
+  # shellcheck source=/dev/null
+  source ~/.retire
+else
+  cat <<- EOF > ~/.retire
+# IMPORTANT:  Remember you can lower the income needed from your portfolio if
+# you have alternative sources of income.  Also, if retiring early, you can use
+# a brokerage account to cover the gap in income between retirement and when you
+# start collecting social security, but none of that is calculated here.
+
+##### Personal details (change these to match your situation) ##################
+
+# When were you born?  (Example: Jan 1, 1980)
+birthday="$birthday"
+
+# How much gross income is needed in TODAY's dollars?  Remember, you will still
+# need to pay taxes.
+income_needed_per_yr="$income_needed_per_yr"
+
+# How much is invested in your portfolio (401k, IRA, Roth IRA, brokerage, etc)?
+# If you're married (and plan to stay that way in retirement, heh!), add your
+# spouse's portfolio too.
+portfolio_today="$portfolio_today"
+
+##### Assumptions (change these to match your tolerance for risk) ##############
+
+# The Fed targets 2%, but as of Jan 2025, the 20 year average for all items is
+# closer to 2.6%. (Source: https://www.bls.gov/charts/consumer-price-index/)
+# The default (3%) is conservative.
+inflation_rate="$inflation_rate"
+
+# A withdrawal rate of 4% is the general rule of thumb, but lower is better if
+# you can afford it.  Also, in retirement you should definitely adjust this rate
+# based on market conditions (higher when markets are good, lower when bad), but
+# this is a flat rate estimate since we can't predict the future.
+withdrawal_rate="$withdrawal_rate"
+
+# The S&P 500 has returned ~10% over it's lifetime, but you should probably use
+# a more conservative 7% (the default) as you get closer to 60.
+projected_growth_rate="$projected_growth_rate"
+EOF
+  echo "Default config created at '~/.retire'.  Edit the config, and re-run this script." >&2
+  exit
+fi
+
+### Financial functions
+function fv {    # future value
+  local r="$1"   # periodic interest rate
+  local n="$2"   # number of payment periods in the term
+  local pmt="$3" # deposit made in each period
+  local pv="$4"  # present value of the investment or loan
+  local t="$5"   # due date is at the beginning (1) or end of a payment period (0, default)
+  local fv
+
+  r=$(bc -l <<< "$r") # input may be given as fractions, e.g. 0.08 int / 12 mo
+  n=$(bc -l <<< "$n") # input may be given as time frames, e.g. 30 yr * 12 mo
+  if [[ "$t" =~ ^0*$ ]]; then t=0; else t=1; fi # only 0 (default) or 1 allowed
+  if (( $(bc -l <<< "$r == 0") )); then # bc required b/c bash uses integer math
+    fv=$(bc -l <<< "-($pv + ($pmt * $n))")
+  else
+    fv=$(bc -l <<< "-($pv*(1+$r)^$n)-($pmt*((((1+$r)^$n)-1)/$r)*(1+($t*$r)))")
+  fi
+  printf '%0.2f' "$fv"
+}
+
+### Test cases for fv() from https://wiki.documentfoundation.org/Documentation/Calc_Functions/FV
+# fv '0.08/12'   48      500 -35000       # expecting 19973.36
+# fv '0.08/12'   48      500 -35000    1  # expecting 19785.52
+# fv '0.07'      20     1500 -15891       # expecting -0.08
+# fv '0.055/12'  60     -300  15706       # expecting -0.20
+# fv '0.075/12' '18*12' -100  -3785.21    # expecting 60000.01
+
+function pmt {   # periodic payment (fixed rate)
+  local r="$1"   # periodic interest rate
+  local n="$2"   # number of payment periods in the term
+  local pv="$3"  # present value of the investment or loan
+  local fv="$4"  # future value of the cash balance desired at the end of the term
+  local t="$5"   # due date is at the beginning (1) or end of a payment period (0, default)
+  local pmt
+
+  r=$(bc -l <<< "$r") # input may be given as fractions, e.g. 0.08 int / 12 mo
+  n=$(bc -l <<< "$n") # input may be given as time frames, e.g. 30 yr * 12 mo
+  if [[ "$fv" =~ ^(\t| )*$ ]]; then fv=0; fi # set default if value omitted
+  if [[ "$t" =~ ^0*$ ]]; then t=0; else t=1; fi # only 0 (default) or 1 allowed
+  if (( $(bc -l <<< "$r == 0") )); then # bc required b/c bash uses integer math
+    fv=$(bc -l <<< "(-$pv - $fv)/n")
+  else
+    fv=$(bc -l <<< "(-($pv*(1+$r)^$n)-$fv)/(((((1+$r)^$n)-1)/$r)*(1+($t*$r)))")
+  fi
+  printf '%0.2f' "$fv"
+}
+
+### Test cases for pmt() from https://wiki.documentfoundation.org/Documentation/Calc_Functions/PMT
+# pmt '0.0199/12' 36 25000 5000 1  # expecting -849.45
+# pmt '0.0199/12' 36 25000         # expecting -715.96
+
+### Calculations
+birthday_full=$(date -d "$birthday" '+%b %_d, %4Y')
+birthday_sec=$(date -d "$birthday" +%s)
+date_now_full=$(date -d now '+%b %_d, %4Y')
+date_now_sec=$(date -d "$date_now_full" +%s)
+date_59_5_sec=$(date -d "$birthday_full + 59 years + 6 months" +%s)
+date_59_5_full=$(date -d "@$date_59_5_sec" '+%b %_d, %4Y')
+days_until_59_5=$(bc -l <<< "($date_59_5_sec - $date_now_sec) / (60*60*24)")
+years_until_59_5=$(bc -l <<< "$days_until_59_5 / 365.25")
+# 60s * 60m * 24h * 365.25d = 31557600d, note that bash discards remainders
+age=$(( (date_now_sec - birthday_sec) / 31557600 ))
+
+printf -v years_until_retirement "%'.0Lf" "$years_until_59_5"
+
+inflation_rate_pretty=$(bc -l <<< "$inflation_rate * 100")
+withdrawal_rate_pretty=$(bc -l <<< "$withdrawal_rate * 100")
+projected_growth_rate_pretty=$(bc -l <<< "$projected_growth_rate * 100")
+
+income_needed_per_mo=$(bc -l <<< "$income_needed_per_yr / 12")
+income_adjusted_per_yr=$(fv "$inflation_rate" "$years_until_retirement" 0 "-$income_needed_per_yr")
+income_adjusted_per_mo=$(bc -l <<< "$income_adjusted_per_yr / 12")
+portfolio_needed=$(bc -l <<< "$income_adjusted_per_yr / $withdrawal_rate")
+portfolio_projected=$(fv "$projected_growth_rate" "$years_until_retirement" 0 "-$portfolio_today")
+portfolio_surplus=$(bc -l <<< "$portfolio_projected - $portfolio_needed")
+
+### Terminal colors
+blue=$(tput setaf 4)  # for user supplied values (all others are calculated)
+red=$(tput setaf 1)   # contributions required
+green=$(tput setaf 2) # you've saved enough and prepped to retire!
+reset=$(tput sgr0)
+
+### Results
+printf "               Birthday:  ${blue}%s${reset}\n" "$birthday_full"
+printf "                  Today:  %s (age %s)\n" "$date_now_full" "$age"
+if (( $(bc -l <<< "$years_until_59_5 < 2") )); then
+  printf -v time_left "in %'.0Lf days" "$days_until_59_5"
+else
+  printf -v time_left "in %'.1Lf years" "$years_until_59_5"
+fi
+printf "               59.5 y/o:  %s (%s)\n\n" "$date_59_5_full" "$time_left"
+
+printf "              Inflation:  ${blue}%'.1Lf%%${reset}\n" "$inflation_rate_pretty"
+printf "        Withdrawal rate:  ${blue}%'.1Lf%%${reset}\n" "$withdrawal_rate_pretty"
+printf "       Projected growth:  ${blue}%'.1Lf%%${reset}\n\n" "$projected_growth_rate_pretty"
+
+printf "Portfolio income needed:  ${blue}$%'.0Lf/yr${reset} ($%'.0Lf/mo)\n" "$income_needed_per_yr" "$income_needed_per_mo"
+printf "     Inflation adjusted:  $%'.0Lf/yr ($%'.0Lf/mo)\n" "$income_adjusted_per_yr" "$income_adjusted_per_mo"
+printf "       Portfolio needed:  $%'.0Lf\n\n" "$portfolio_needed"
+printf "        Portfolio today:  ${blue}$%'.0Lf${reset}\n"   "$portfolio_today"
+printf "Projected at retirement:  $%'.0Lf\n\n" "$portfolio_projected"
+
+if (( $(bc -l <<< "$portfolio_surplus > 0") )); then
+  printf "      ${green}Projected surplus:  $%'.0Lf${reset}\n" "$portfolio_surplus"
+else
+  savings_required_per_yr=$(pmt "$projected_growth_rate" "$years_until_retirement" "-$portfolio_today" "$portfolio_needed")
+  savings_required_per_mo=$(bc -l <<< "$savings_required_per_yr / 12" )
+  printf "    ${red}Projected shortfall:  $%'.0Lf${reset}\n" "$portfolio_surplus"
+  printf "       ${red}Savings required:  $%'.0Lf/yr ($%'.0Lf/mo)${reset}\n" "$savings_required_per_yr" "$savings_required_per_mo"
+fi

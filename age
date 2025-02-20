@@ -1,0 +1,25 @@
+#!/bin/bash
+
+birthday="$1"
+
+if [[ -z "$birthday" ]]; then
+  echo "USAGE:   $0 <birthday>" >&2
+  echo "EXAMPLE: $0 1/1/2000" >&2
+  exit 1
+fi
+
+today=$(date +%F)             # whole day date (ignoring time of birth)
+cs=$(date -d "$today" +%s)    # current date, in seconds
+bs=$(date -d "$birthday" +%s) # birthday, in seconds
+
+# 60s * 60m * 24h * 365.25d = 31557600s (and bash discards remainders)
+y=$(( ( cs - bs ) / 31557600 )) # age in whole years
+
+last_birthday=$(date -d "$birthday + $y years" +%F) # last birthday
+ls=$(date -d "$last_birthday" +%s) # last birthday, in seconds
+
+# 60s * 60m * 24h = 86400s
+d=$(( ( cs - ls ) / 86400 )) # whole days since last birthday
+
+printf "%s years and %s days old\n" "$y" "$d"
+
