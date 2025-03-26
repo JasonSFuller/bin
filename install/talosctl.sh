@@ -1,7 +1,7 @@
 #!/bin/bash
 
-URL='https://github.com/siderolabs/talos/releases/download/v1.9.3/talosctl-linux-amd64'
-SHA='https://github.com/siderolabs/talos/releases/download/v1.9.3/sha256sum.txt'
+URL='https://github.com/siderolabs/talos/releases/download/v1.9.4/talosctl-linux-amd64'
+SHA='https://github.com/siderolabs/talos/releases/download/v1.9.4/sha256sum.txt'
 
 ################################################################################
 
