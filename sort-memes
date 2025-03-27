@@ -1,0 +1,62 @@
+#!/bin/bash
+
+src="$HOME/Pictures/Memes"
+dst="$HOME/pCloudDrive/Images/Memes"
+
+set -e
+
+function warn  { echo "WARN:  $*" >&2; }
+function error { echo "ERROR: $*" >&2; exit 1; }
+
+function sort_meme {
+  local in="$*" file base ext lastmod year out
+  if [[ ! -r "$in" ]]; then error "file not found, or unreadable ($in)"; fi
+  in=$(realpath "$in")
+  # local dir=$(dirname "$in")
+  file=$(basename "$in")
+  base=${file%.*}
+  ext=${file##*.}
+  lastmod=$(stat -c %y "$in")
+  year=$(date -d "$lastmod" +%Y)
+  out="$dst/$year/$base"
+  if [[ ! -d "$dst/$year" ]]; then install -m 0755 -d "$dst/$year"; fi
+  case "$ext" in
+    [wW][eE][bB][pP]) convert2png "$in" "${out}.png" ;;
+    [jJ][pP][gG])     convert2png "$in" "${out}.png" ;;
+    [jJ][pP][eE][gG]) convert2png "$in" "${out}.png" ;;
+    [mM][pP]4)        convert2mp4 "$in" "${out}.mp4" ;;
+    [wW][eE][bB][mM]) convert2mp4 "$in" "${out}.mp4" ;;
+    *)                warn "unhandled file type ($in)" ;;
+  esac
+}
+
+function convert2mp4 {
+  local in="$1" out="$2" last
+  if [[ ! "$out" =~ \.mp4$ ]]; then error "extension must be '.mp4'"; fi
+  last=$(stat -c %y "$in")
+  ffmpeg -y -nostdin -i "$in" "$out"
+  touch -d "$last" "$out" || error "unable to set modification time"
+  echo "INFO: Converted $in"
+  echo "INFO:     ...to $out"
+  rm -f "$in"
+}
+
+function convert2png {
+  local in="$1" out="$2" last
+  if [[ ! "$out" =~ \.png$ ]]; then error "extension must be '.png'"; fi
+  last=$(stat -c %y "$in")
+  convert "$in" "$out"
+  touch -d "$last" "$out" || error "unable to set modification time"
+  echo "INFO: Converted $in"
+  echo "INFO:     ...to $out"
+  rm -f "$in"
+}
+
+if ! builtin command -v ffmpeg  &>/dev/null; then error "missing package: ffmpeg"; fi
+if ! builtin command -v convert &>/dev/null; then error "missing package: imagemagick"; fi
+
+while IFS= read -r -d $'\0' file
+do
+  sort_meme "$file"
+done < <(find "$src" -maxdepth 1 -type f -print0)
+
