@@ -12,5 +12,5 @@ curl -fsSLo "$FILE" "$URL"
 checksums=$(curl -fsSL "$SHA")
 grep "\s${FILE}\s*$" <<< "$checksums" > "$FILE.sha256"
 if ! sha256sum -c "$FILE.sha256"; then error 'checksum failed'; fi
-install -m 0755 yt-dlp_linux ~/bin/yt-dlp
+install -m 0755 "$FILE" ~/bin/
 
