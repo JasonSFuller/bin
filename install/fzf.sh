@@ -1,7 +1,7 @@
 #!/bin/bash
 
-URL='https://github.com/junegunn/fzf/releases/download/v0.58.0/fzf-0.58.0-linux_amd64.tar.gz'
-SHA='https://github.com/junegunn/fzf/releases/download/v0.58.0/fzf_0.58.0_checksums.txt'
+URL='https://github.com/junegunn/fzf/releases/download/v0.62.0/fzf-0.62.0-linux_amd64.tar.gz'
+SHA='https://github.com/junegunn/fzf/releases/download/v0.62.0/fzf_0.62.0_checksums.txt'
 
 ################################################################################
 
@@ -20,10 +20,11 @@ dir=$(mktemp -d)
 cd "$dir" || error "could not open temp dir ($dir)"
 
 tar=$(basename "$URL")
+printf -v tar '%q' "$tar"
 
 curl -sSL "$URL" -o "$tar"
 curl -sSL "$SHA" -o checksum
-grep "$tar" checksum > "${tar}.sha256"
+grep "$tar\$" checksum > "${tar}.sha256"
 sha256sum -c "${tar}.sha256" || error "Invalid checksum"
 
 tar xf "$tar"

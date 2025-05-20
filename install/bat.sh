@@ -19,11 +19,12 @@ dir=$(mktemp -d)
 cd "$dir" || error "could not open temp dir ($dir)"
 
 tar=$(basename "$URL")
+printf -v tar '%q' "$tar"
 
 curl -sSL "$URL" -o "$tar"
 tar xf "$tar"
 
-install -m 0755 -d ~/bin
+install -m 0755 -d ~/bin/
 install -m 0755 bat-*-x86_64-unknown-linux-musl/bat ~/bin/bat
 
 echo "Don't forget to set an alias for 'cat' in your ~/.bashrc:"

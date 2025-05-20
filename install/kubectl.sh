@@ -22,11 +22,10 @@ cd "$dir" || error "could not open temp dir ($dir)"
 
 exe=$(basename "$URL")
 
-curl -sSL "$URL" -o "$exe"
-curl -sSL "$SHA" -o checksum
+curl -fsSL "$URL" -o "$exe"
+curl -fsSL "$SHA" -o checksum
 echo " *$exe" >> checksum
 sha256sum -c checksum || error "Invalid checksum"
 
-install -m 0755 -d ~/bin
+install -m 0755 -d ~/bin/
 install -m 0755 "$exe" ~/bin/kubectl
-

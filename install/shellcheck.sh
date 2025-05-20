@@ -20,9 +20,8 @@ cd "$dir" || error "could not open temp dir ($dir)"
 
 tar=$(basename "$URL")
 
-curl -sSL "$URL" -o "$tar"
+curl -fsSL "$URL" -o "$tar"
 tar xf "$tar"
 
-install -m 0755 -d ~/bin
+install -m 0755 -d ~/bin/
 install -m 0755 shellcheck-*/shellcheck ~/bin/shellcheck
-
