@@ -33,4 +33,10 @@ install -m 0755 -d ~/bin/
 install -m 0755 bin/podman-remote-static-linux_amd64 ~/bin/podman-remote
 
 echo "Don't forget to set an alias for 'podman' in your ~/.bashrc:"
-echo "  alias podman='podman-remote"
+echo "  alias podman='podman-remote'"
+echo "Configure the remote connection for your Podman client:"
+echo "  podman system connection add --default podman-machine-default-root unix:///mnt/wsl/podman-sockets/podman-machine-default/podman-root.sock"
+echo "Give your user permission to the Podman socket (via the 'uucp' group):"
+echo "  ls -la /mnt/wsl/podman-sockets/podman-machine-default/podman-root.sock"
+echo "  sudo usermod -aG uucp \"$USER\""
+echo "Finally, log out/in to update '\$PATH' and your user's group permissions."
