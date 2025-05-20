@@ -9,7 +9,7 @@ function error { echo "ERROR: $*" >&2; exit 1; }
 
 function cleanup {
   cd || error "could not open home dir ($HOME)"
-  # rm -rf "$dir"
+  rm -rf "$dir"
 }
 
 ################################################################################
