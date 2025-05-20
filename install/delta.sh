@@ -24,4 +24,4 @@ curl -fsSL "$URL" -o "$tar"
 tar xf "$tar"
 
 install -m 0755 -d ~/bin
-install -m 0755 delta-0.18.2-x86_64-unknown-linux-musl/delta ~/bin/delta
+install -m 0755 delta-*-x86_64-unknown-linux-musl/delta ~/bin/delta
