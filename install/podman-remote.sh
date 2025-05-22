@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# PURPOSE:  Install when using WSL and you want to interact with the Podman
+# Desktop distro from your Ubuntu distro.
+
 URL='https://github.com/containers/podman/releases/latest/download/podman-remote-static-linux_amd64.tar.gz'
 SHA='https://github.com/containers/podman/releases/latest/download/shasums'
 
@@ -39,4 +42,6 @@ echo "  podman system connection add --default podman-machine-default-root unix:
 echo "Give your user permission to the Podman socket (via the 'uucp' group):"
 echo "  ls -la /mnt/wsl/podman-sockets/podman-machine-default/podman-root.sock"
 echo "  sudo usermod -aG uucp \"$USER\""
+echo "  groups"
 echo "Finally, log out/in to update '\$PATH' and your user's group permissions."
+echo "  exit"
