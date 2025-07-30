@@ -27,5 +27,11 @@ tar xf "$tar"
 install -m 0755 -d ~/bin/
 install -m 0755 bat-*-x86_64-unknown-linux-musl/bat ~/bin/bat
 
-echo "Don't forget to set an alias for 'cat' in your ~/.bashrc:"
-echo "  alias cat='bat --decorations never --paging never'"
+if ! grep -qF '.bash_aliases' ~/.bashrc; then
+  cmd='\nif [[ -f ~/.bash_aliases ]]; then source ~/.bash_aliases; fi'
+  echo -e "$cmd" >> ~/.bashrc
+fi
+if ! grep -qF 'alias cat=' ~/.bash_aliases; then
+  cmd='\nalias cat="bat --decorations never --paging never"'
+  echo -e "$cmd" >> ~/.bash_aliases
+fi
