@@ -30,8 +30,10 @@ install -m 0755 bat-*-x86_64-unknown-linux-musl/bat ~/bin/bat
 if ! grep -qF '.bash_aliases' ~/.bashrc &>/dev/null; then
   cmd='\nif [[ -f ~/.bash_aliases ]]; then source ~/.bash_aliases; fi'
   echo -e "$cmd" >> ~/.bashrc
+  echo 'Updated ~/.bashrc'
 fi
 if ! grep -qF 'alias cat=' ~/.bash_aliases &>/dev/null; then
   cmd='\nalias cat="bat --decorations never --paging never"'
   echo -e "$cmd" >> ~/.bash_aliases
+  echo 'Updated ~/.bash_aliases'
 fi

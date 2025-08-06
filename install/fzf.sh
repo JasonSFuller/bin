@@ -31,3 +31,8 @@ tar xf "$tar"
 
 install -m 0755 -d ~/bin
 install -m 0755 ./fzf ~/bin/fzf
+
+if ! grep -qF 'fzf --bash' ~/.bashrc &>/dev/null; then
+	echo 'source <(fzf --bash)' >> ~/.bashrc
+  echo 'Updated ~/.bashrc'
+fi
