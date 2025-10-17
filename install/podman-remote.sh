@@ -16,11 +16,6 @@ init
 
 ################################################################################
 
-set -e
-trap cleanup INT EXIT
-dir=$(mktemp -d)
-cd "$dir" || error "could not open temp dir ($dir)"
-
 tar=$(basename "$URL")
 printf -v tar '%q' "$tar"
 

@@ -4,19 +4,13 @@ URL='https://github.com/koalaman/shellcheck/releases/download/v0.10.0/shellcheck
 
 ################################################################################
 
-function error { echo "ERROR: $*" >&2; exit 1; }
-
-function cleanup {
-  cd || error "could not open home dir ($HOME)"
-  rm -rf "$dir"
-}
+self=$(realpath -e "${BASH_SOURCE[0]}")
+selfdir=$(dirname "$self")
+# shellcheck source=./__common.sh
+source "${selfdir}/__common.sh"
+init
 
 ################################################################################
-
-set -e
-trap cleanup INT EXIT
-dir=$(mktemp -d)
-cd "$dir" || error "could not open temp dir ($dir)"
 
 tar=$(basename "$URL")
 
