@@ -8,12 +8,11 @@ SHA='https://github.com/containers/podman/releases/latest/download/shasums'
 
 ################################################################################
 
-function error { echo "ERROR: $*" >&2; exit 1; }
-
-function cleanup {
-  cd || error "could not open home dir ($HOME)"
-  rm -rf "$dir"
-}
+self=$(realpath -e "${BASH_SOURCE[0]}")
+selfdir=$(dirname "$self")
+# shellcheck source=./__common.sh
+source "${selfdir}/__common.sh"
+init
 
 ################################################################################
 
@@ -35,8 +34,8 @@ tar xf "$tar"
 install -m 0755 -d ~/bin/
 install -m 0755 bin/podman-remote-static-linux_amd64 ~/bin/podman-remote
 
-echo "Don't forget to set an alias for 'podman' in your ~/.bashrc:"
-echo "  alias podman='podman-remote'"
+add_bash_aliases "podman='podman-remote'"
+
 echo "Configure the remote connection for your Podman client:"
 echo "  podman system connection add --default podman-machine-default-root unix:///mnt/wsl/podman-sockets/podman-machine-default/podman-root.sock"
 echo "Give your user permission to the Podman socket (via the 'uucp' group):"

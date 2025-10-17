@@ -4,12 +4,11 @@ URL='https://github.com/sharkdp/bat/releases/download/v0.25.0/bat-v0.25.0-x86_64
 
 ################################################################################
 
-function error { echo "ERROR: $*" >&2; exit 1; }
-
-function cleanup {
-  cd || error "could not open home dir ($HOME)"
-  rm -rf "$dir"
-}
+self=$(realpath -e "${BASH_SOURCE[0]}")
+selfdir=$(dirname "$self")
+# shellcheck source=./__common.sh
+source "${selfdir}/__common.sh"
+init
 
 ################################################################################
 
@@ -27,13 +26,4 @@ tar xf "$tar"
 install -m 0755 -d ~/bin/
 install -m 0755 bat-*-x86_64-unknown-linux-musl/bat ~/bin/bat
 
-if ! grep -qF '.bash_aliases' ~/.bashrc &>/dev/null; then
-  cmd='\nif [[ -f ~/.bash_aliases ]]; then source ~/.bash_aliases; fi'
-  echo -e "$cmd" >> ~/.bashrc
-  echo 'Updated ~/.bashrc'
-fi
-if ! grep -qF 'alias cat=' ~/.bash_aliases &>/dev/null; then
-  cmd='\nalias cat="bat --decorations never --paging never"'
-  echo -e "$cmd" >> ~/.bash_aliases
-  echo 'Updated ~/.bash_aliases'
-fi
+add_bash_aliases "cat='bat --decorations never --paging never'"
