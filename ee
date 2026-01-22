@@ -1,0 +1,11 @@
+#!/bin/bash
+
+if [[ -z "$*" ]]; then
+  cmd=bash
+else
+  cmd="$*"
+fi
+
+image=${DEFAULT_EE_IMAGE:-ghcr.io/ansible/community-ansible-dev-tools:latest}
+
+podman run -it --rm "$image" "$cmd"
