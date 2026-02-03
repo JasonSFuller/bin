@@ -8,4 +8,5 @@ fi
 
 image=${DEFAULT_EE_IMAGE:-ghcr.io/ansible/community-ansible-dev-tools:latest}
 
+printf "Image: %s\n" "$image"
 podman run -it --rm "$image" "$cmd"
