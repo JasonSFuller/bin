@@ -1,19 +1,89 @@
 #!/bin/bash
 
-# Generate a bunch of random passwords.
+# Generate a bunch of random passwords and passphrases.
 
 function error { echo "ERROR: $*" >&2; exit 1; }
+
+function get_word_list {
+  # Get KeePassXC's slightly sanitized version of EFF's Diceware long word list.
+  local url='https://raw.githubusercontent.com/keepassxreboot/keepassxc/refs/tags/latest/share/wordlists/eff_large.wordlist'
+  local dir="${XDG_CACHE_HOME:-$HOME/.cache}/pwgen"
+  WORD_LIST="$dir/keepassxc.eff_large.wordlist.txt"
+  if [[ ! -d "$dir" ]]; then
+    mkdir -p "$dir"
+  fi
+  if [[ ! -f "$WORD_LIST" ]]; then
+    curl -sSL "$url" -o "$WORD_LIST" || error "failed to download word list"
+  fi
+}
+
+function get_passphrase {
+  local count="$1"
+  local delim="${2:-.}"
+  local mode="$3"
+  local special='!#%&()*+,-./:;<=>?@[]^_{|}~$'
+  local phrase rand char
+  for i in $(seq 1 "$count")
+  do
+    if [[ i -ne 1 ]]; then phrase+="$delim"; fi
+    word="$(shuf -n 1 "$WORD_LIST")"
+    case "$(( RANDOM % 3 ))" in # 0 - 2 inclusive
+      0) word=${word^} ;; # capitalize first letter
+      2) word=${word^^} ;; # upper case whole word
+    esac
+    case "$(( RANDOM % 5 ))" in # 0 - 4 inclusive
+      0) word+=$(( RANDOM % 10 )) ;; # add single digit
+      1) word+=$(( RANDOM % 100 )) ;; # add double digits
+      4)
+        if [[ "$mode" == 'special' ]]; then
+          rand="$(( RANDOM % ${#special} ))"
+          char="${special:$rand:1}"
+          if [[ "$char" != "$delim" ]]; then word+="$char"; fi
+        fi ;;
+    esac
+    phrase+="$word"
+  done
+  echo "$phrase"
+}
 
 echo -n '-- 32 alphanum + special -------  '
 echo -n '-- 32 alphanum -----------------  '
 echo    '-- 16 ----------'
 
-for ((i=1; i<=20; i++))
+for i in {1..20}
 do
+  # All printable ASCII chars, except backslash, single/double quotes, and backtick
   LC_CTYPE=C tr -dc '^!-~' < /dev/urandom | tr -d "\\\\'\"\`" | head -c 32
   echo -n '  '
+  # 32 alphanumeric chars, upper and lower case
   LC_CTYPE=C tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 32
   echo -n '  '
+  # 16 alphanumeric chars, upper and lower case
   LC_CTYPE=C tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 16
   echo
+done
+echo
+
+get_word_list
+
+echo -n '-- 3 word passphrase -----------  '
+echo    '-- 5 word passphrase (plus specials) -------------'
+#        123456789-123456789-123456789-123456789-
+
+for i in {1..10}
+do
+  # pass1 must contain at least one upper, lower, and digit (delim = period)
+  pass1=$(get_passphrase 3)
+  until [[ "$pass1" =~ [a-z] && "$pass1" =~ [A-Z] && "$pass1" =~ [0-9] ]]
+  do
+    pass1=$(get_passphrase 3)
+  done
+
+  # pass2 must contain at least one upper, lower, and digit (delim = random special char)
+  pass2=$(get_passphrase 5 . special)
+  until [[ "$pass2" =~ [a-z] && "$pass2" =~ [A-Z] && "$pass2" =~ [0-9] ]]
+  do
+    pass2=$(get_passphrase 5 . special)
+  done
+  printf "%-32s  %s\n" "$pass1" "$pass2"
 done
