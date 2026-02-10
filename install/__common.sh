@@ -26,6 +26,7 @@ function add_bash_aliases {
   local alias aliases=("$@")
   create_bash_aliases_file
   for alias in "${aliases[@]}"; do
+    # TODO: tighten this up; target the alias name, not a partial line match
     if ! grep -qF "alias $alias" ~/.bash_aliases &>/dev/null; then
       echo "alias $alias" >> ~/.bash_aliases
       echo "Updated ~/.bash_aliases: alias $alias"
@@ -44,5 +45,9 @@ function create_bashrc_d_stub {
       'fi' \
       >> ~/.bashrc
     echo 'Updated ~/.bashrc:  added .bashrc.d/ inclusion'
+  fi
+  if [[ ! -d ~/.bashrc.d ]]; then
+    install -d ~/.bashrc.d
+    echo 'Created ~/.bashrc.d directory'
   fi
 }
