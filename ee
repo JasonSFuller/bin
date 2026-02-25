@@ -1,12 +1,18 @@
 #!/bin/bash
 
-if [[ -z "$*" ]]; then
-  cmd=bash
-else
-  cmd="$*"
-fi
-
+cmd=${*:-bash}
 image=${DEFAULT_EE_IMAGE:-ghcr.io/ansible/community-ansible-dev-tools:latest}
+ipath=${DEFAULT_EE_MOUNT_PATH}
+opt=(run -it --rm)
+if [[ -n "$ipath" ]]; then
+	opt+=(-v ".:$ipath:Z")
+fi
+opt+=("$image" "$cmd")
 
-printf "Image: %s\n" "$image"
-podman run -it --rm "$image" "$cmd"
+if command -v podman-remote >/dev/null 2>&1; then
+  set -x
+  podman-remote "${opt[@]}"
+else
+  set -x
+  podman "${opt[@]}"
+fi
