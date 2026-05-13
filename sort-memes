@@ -21,12 +21,12 @@ function sort_meme {
   out="$dst/$year/$base"
   if [[ ! -d "$dst/$year" ]]; then install -m 0755 -d "$dst/$year"; fi
   case "$ext" in
-    [wW][eE][bB][pP]) convert2png "$in" "${out}.png" ;;
-    [jJ][pP][gG])     convert2png "$in" "${out}.png" ;;
-    [jJ][pP][eE][gG]) convert2png "$in" "${out}.png" ;;
-    [mM][pP]4)        convert2mp4 "$in" "${out}.mp4" ;;
-    [wW][eE][bB][mM]) convert2mp4 "$in" "${out}.mp4" ;;
-    *)                warn "unhandled file type ($in)" ;;
+    [pP][nN][gG])      convert2png "$in" "${out}.png" ;;
+    [wW][eE][bB][pP])  convert2png "$in" "${out}.png" ;;
+    [jJ][pP][eE]?[gG]) convert2png "$in" "${out}.png" ;;
+    [mM][pP]4)         convert2mp4 "$in" "${out}.mp4" ;;
+    [wW][eE][bB][mM])  convert2mp4 "$in" "${out}.mp4" ;;
+    *)                 warn "unhandled file type ($in)" ;;
   esac
 }
 
